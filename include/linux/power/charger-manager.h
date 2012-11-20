@@ -16,7 +16,7 @@
 #define _CHARGER_MANAGER_H
 
 #include <linux/power_supply.h>
-#include <linux/extcon.h>
+struct extcon_dev;
 
 enum data_source {
 	CM_BATTERY_PRESENT,
