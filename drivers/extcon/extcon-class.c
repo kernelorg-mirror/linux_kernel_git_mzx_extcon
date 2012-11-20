@@ -545,6 +545,36 @@ int extcon_unregister_notifier(struct extcon_dev *edev,
 }
 EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
 
+/**
+ * extcon_cable_set_data() - Set the data structure for a cable
+ * @edev:	the extcon device
+ * @cable_index:	the cable index of the correspondant
+ * @type:	type of the data structure
+ * @data:
+ */
+void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
+			   enum extcon_cable_type type,
+			   union extcon_cable_data data)
+{
+	edev->cables[cable_index].type = type;
+	edev->cables[cable_index].data = data;
+}
+
+/**
+ * extcon_cable_get_data() - Get the data structure for a cable
+ * @edev:	the extcon device
+ * @cable_index:	the cable index of the correspondant
+ * @type:	type of the data structure
+ * @data:	the corresponding data structure (e.g., regulator)
+ */
+void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
+			   enum extcon_cable_type *type,
+			   union extcon_cable_data *data)
+{
+	*type = edev->cables[cable_index].type;
+	*data = edev->cables[cable_index].data;
+}
+
 static struct device_attribute extcon_attrs[] = {
 	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
 	__ATTR_RO(name),

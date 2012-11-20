@@ -27,6 +27,11 @@
 #include <linux/notifier.h>
 #include <linux/sysfs.h>
 
+/* For the cable types */
+#include <linux/regulator/consumer.h>
+#include <linux/power_supply.h>
+#include <linux/power/charger-manager.h>
+
 #define SUPPORTED_CABLE_MAX	32
 #define CABLE_NAME_MAX		30
 
@@ -137,6 +142,21 @@ struct extcon_dev {
 	struct device_attribute *d_attrs_muex;
 };
 
+enum extcon_cable_type {
+	EXTCON_CT_NONE = 0,
+	EXTCON_CT_REGULATOR,
+	EXTCON_CT_PSY,
+	EXTCON_CT_CHARGER_MANAGER,
+	/* Please add other related standards when needed */
+};
+
+union extcon_cable_data {
+	struct regualtor *reg;	/* EXTCON_CT_REGULATOR */
+	struct power_supply *psy; /* EXTCON_CT_PSY */
+	struct charger_cable *charger; /* EXTCON_CT_CHARGER_MANAGER */
+	/* Please add accordingly with enum extcon_cable_type */
+};
+
 /**
  * struct extcon_cable	- An internal data for each cable of extcon device.
  * @edev:	The extcon device
@@ -145,6 +165,8 @@ struct extcon_dev {
  * @attr_name:	"name" sysfs entry
  * @attr_state:	"state" sysfs entry
  * @attrs:	Array pointing to attr_name and attr_state for attr_g
+ * @type:	The type of @data.
+ * @data:	The data structure representing the status and states of this cable.
  */
 struct extcon_cable {
 	struct extcon_dev *edev;
@@ -155,6 +177,9 @@ struct extcon_cable {
 	struct device_attribute attr_state;
 
 	struct attribute *attrs[3]; /* to be fed to attr_g.attrs */
+
+	enum extcon_cable_type type;
+	union extcon_cable_data data;
 };
 
 /**
@@ -184,6 +209,17 @@ extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
 extern void extcon_dev_unregister(struct extcon_dev *edev);
 extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
 
+/*
+ * Following APIs are for managing the status and states of each cable.
+ * For example, if a cable is represented as a regulator, then the cable
+ * may have struct regulator as its data.
+ */
+extern void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
+				  enum extcon_cable_type type,
+				  union extcon_cable_data data);
+extern void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
+				  enum extcon_cable_type *type,
+				  union extcon_cable_data *data);
 /*
  * get/set/update_state access the 32b encoded state value, which represents
  * states of all possible cables of the multistate port. For example, if one
@@ -245,6 +281,14 @@ static inline int extcon_dev_register(struct extcon_dev *edev,
 }
 
 static inline void extcon_dev_unregister(struct extcon_dev *edev) { }
+
+static void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
+				 enum extcon_cable_type type,
+				 union extcon_cable_data data) { }
+
+static void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
+				 enum extcon_cable_type *type,
+				 union extcon_cable_data *data) { }
 
 static inline u32 extcon_get_state(struct extcon_dev *edev)
 {
